@@ -1,6 +1,6 @@
 /*
  Project: ValBal EE 8.1 Radio Code
- Created: 08/27/2017 3:33:25 PM
+ Created: 08/26/2017 12:33:25 PM
  Author:  Aria Tedjarati
 
  Description:
@@ -11,10 +11,11 @@
 
  Status:
  07/09/2017 Starting
- 08/27/2017 Hardware confirmed working, SSTV, .wav file works, GFSK works, power works.  
+ 08/26/2017 Hardware confirmed working, SSTV, .wav file works, GFSK works, power works.  
+ 08/27/2017 APRS works.  All hardware is complete. The board is fully functional.
 
  TODO as of 08/27/2017:
- Try APRS and then full code
+ Interface with mainboard, write full flight code for entire system.
 */
 
 /*************************************************************************************************************************************************************************************************/
