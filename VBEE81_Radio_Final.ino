@@ -13,8 +13,9 @@
  07/09/2017 Starting
  08/26/2017 Hardware confirmed working, SSTV, .wav file works, GFSK works, power works.  
  08/27/2017 APRS works.  All hardware is complete. The board is fully functional.
+ 09/17/2017 Test code for the range test is written.
 
- TODO as of 08/27/2017:
+ TODO as of 09/17/2017:
  Interface with mainboard, write full flight code for entire system.
 */
 
@@ -105,6 +106,8 @@ states        currentState;
 states        previousState;
 states        nextState;
 
+int configuration = 1;
+
 /*************************************************************************************************************************************************************************************************/
 
 void setup() {
@@ -153,7 +156,7 @@ void loop() {
   switch (currentState){
     case WAIT_FOR_COMMAND:
       //if (digitalRead(PAYLOAD_1) == HIGH) nextState = SSTV_CHARGING;
-      nextState = SSTV_CHARGING;
+      nextState = GFSK_CONFIG;//SSTV_CHARGING;
       break;
       
     case SSTV_CHARGING:
@@ -273,28 +276,73 @@ void loop() {
 //      uint16_t deviceTypee2 = ((buf[1] << 8) | buf[2]);
 //      Serial.print("device type = ");
 //      Serial.println(deviceTypee2, HEX);
-      if (!rf24.setFrequency(435.0)) {
+      if (!rf24.setFrequency(433.5)) {
         Serial.println("setFrequency failed");
       } else {
-        Serial.println("Frequency set to 435 MHz");
+        Serial.println("Frequency set to 433.5 MHz");
       }
-      //rf24.setModemConfig(rf24.FSK_Rb0_5Fd1);
-      rf24.setModemConfig(rf24.GFSK_Rb0_5Fd1);
-      rf24.setTxPower(0x4f); //0x00 to 0x4f. 0x10 is default
+      Serial.println("Please set the configuration.  Once you set the configuration, 10 messages in that configuration will be sent to the receiver, and then you will be brough back to this page.");
+      Serial.println("1 = FSK 500 bps");
+      Serial.println("2 = FSK 5   kbps");
+      Serial.println("3 = FSK 50  kbps");
+      Serial.println("4 = FSK 150 kbps");
+      Serial.println("5 = GFSK 500 bps");
+      Serial.println("6 = GFSK 5 kbps");
+      Serial.println("7 = GFSK 50 kbps");
+      Serial.println("8 = GFSK 150 kbps");
+      Serial.println("9 = OOK 5 kbps");
+      Serial.println("10 = OOK 10 kbps");
+
+      while(!Serial.available()){
+      }
+
+      if(Serial.available()){
+        configuration = Serial.parseInt();
+      }
+      
+      if (configuration == 1) rf24.setModemConfig(rf24.FSK_Rb0_5Fd1);    // FSK  500 bps   
+      if (configuration == 2) rf24.setModemConfig(rf24.FSK_Rb5Fd10);     // FSK  5   kbps
+      if (configuration == 3) rf24.setModemConfig(rf24.FSK_Rb50Fd100);   // FSK  50  kbps
+      if (configuration == 4) rf24.setModemConfig(rf24.FSK_Rb150Fd300);  // FSK  150 kbps
+      if (configuration == 5) rf24.setModemConfig(rf24.GFSK_Rb0_5Fd1);   // GFSK 500 bps  
+      if (configuration == 6) rf24.setModemConfig(rf24.GFSK_Rb5Fd10);    // GFSK 5   kbps
+      if (configuration == 7) rf24.setModemConfig(rf24.GFSK_Rb50Fd100);  // GFSK 50  kbps
+      if (configuration == 8) rf24.setModemConfig(rf24.GFSK_Rb150Fd300); // GFSK 150 kbps  
+      if (configuration == 9) rf24.setModemConfig(rf24.OOK_Rb5Bw30);     // OOK  5   kbps
+      if (configuration == 10) rf24.setModemConfig(rf24.OOK_Rb10Bw40);   // OOK  10  kbps
+      
+      rf24.setTxPower(0x7f); //0x00 to 0x4f. 0x10 is default
+      logfile.print("Transmitting ten times at 433.5 MHz in configuration "); 
+      logfile.println(configuration);
+      logfile.flush();
+      
+      delay(1000);
       nextState = TRANSMIT_GFSK;
       break;
       
-    case TRANSMIT_GFSK:
-      uint8_t data[] = "Hello World! TEST TEST TEST TEST TEST TEST TEEEEEST TXTXTXTXTXTXTXTXTXTXTTXTXTXTXTXTXTXTXTXTXTXTX";
-      rf24.send(data, sizeof(data));
-      rf24.waitPacketSent();
-      delay(1000);
-      rf24.send(data, sizeof(data));
-      rf24.waitPacketSent();
-      delay(1000);
-      rf24.send(data, sizeof(data));
-      rf24.waitPacketSent();
-      delay(1000);
+      case TRANSMIT_GFSK:   
+//        while (true){
+//          uint8_t data[100] = {0};
+//          char dataa[100] = {'a'};
+//          uint8_t leng;
+//          boolean tru = rf24.recv(data,&leng);Serial.println(tru);
+//          for (int i = 0; i < 100; i++){
+//            dataa[i]=data[i];
+//          Serial.print(dataa[i]);
+//          }Serial.println();
+//          delay(100);
+//        }
+      uint8_t data[] = "This is to test the ValBal radio receiver and transmitter.  If you get this message completely this board worked.  Hooray!! 0123456789!@#$%^&*()_+ DONE";
+      Serial.print("Starting 10 transmissions at configuration ");
+      Serial.println(configuration);
+      for (int k = 0; k < 10; k++){
+        rf24.send(data, sizeof(data));
+        rf24.waitPacketSent();
+        Serial.print("Transmission #");
+        Serial.print(k);
+        Serial.println(" complete.");
+        delay(3000);
+      }
       GFSKOff();
       nextState = WAIT_FOR_COMMAND;
       break;
@@ -320,20 +368,20 @@ void setupSDCard() {
   Serial.println("Card Initialitzed");
   //Serial.println(SD.open("SSTV_TEST-2.WAV"));
     
-//  char filename[] = "LOGGER00.CSV";
-//  for (uint8_t i = 0; i < 100; i++) {
-//    filename[6] = i / 10 + '0';
-//    filename[7] = i % 10 + '0';
-//    if (! SD.exists(filename)) {   // only open a new file if it doesn't exist
-//      logfile = SD.open(filename, FILE_WRITE);
-//      break;  // leave the loop!
-//    }
-//  }
-//  if (!logfile) {
-//    Serial.println ("ERROR: COULD NOT CREATE FILE");
-//  } else {
-//    Serial.print("Logging to: "); Serial.println(filename);
-//  }
+  char filename[] = "LOGGER00.CSV";
+  for (uint8_t i = 0; i < 100; i++) {
+    filename[6] = i / 10 + '0';
+    filename[7] = i % 10 + '0';
+    if (! SD.exists(filename)) {   // only open a new file if it doesn't exist
+      logfile = SD.open(filename, FILE_WRITE);
+      break;  // leave the loop!
+    }
+  }
+  if (!logfile) {
+    Serial.println ("ERROR: COULD NOT CREATE FILE");
+  } else {
+    Serial.print("Logging to: "); Serial.println(filename);
+  }
 }
 
 /*************************************************************************************************************************************************************************************************/
