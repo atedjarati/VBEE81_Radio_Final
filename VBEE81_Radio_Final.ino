@@ -311,7 +311,7 @@ void loop() {
       if (configuration == 9) rf24.setModemConfig(rf24.OOK_Rb5Bw30);     // OOK  5   kbps
       if (configuration == 10) rf24.setModemConfig(rf24.OOK_Rb10Bw40);   // OOK  10  kbps
       
-      rf24.setTxPower(0x7f); //0x00 to 0x4f. 0x10 is default
+      rf24.setTxPower(0x4f); //0x00 to 0x4f. 0x10 is default
       logfile.print("Transmitting ten times at 433.5 MHz in configuration "); 
       logfile.println(configuration);
       logfile.flush();
@@ -332,7 +332,7 @@ void loop() {
 //          }Serial.println();
 //          delay(100);
 //        }
-      uint8_t data[] = "This is to test the ValBal radio receiver and transmitter.  If you get this message completely this board worked.  Hooray!! 0123456789!@#$%^&*()_+ DONE";
+      uint8_t data[] = "Hello This is to test the ValBal radio receiver and transmitter.  If you get this message completely this board worked.  Hooray!! 0123456789!@#$%^&*()_+ DONE";
       Serial.print("Starting 10 transmissions at configuration ");
       Serial.println(configuration);
       for (int k = 0; k < 10; k++){

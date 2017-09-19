@@ -129,10 +129,26 @@ void loop() {
       if (configuration == 9) rf24.setModemConfig(rf24.OOK_Rb5Bw30);     // OOK  5   kbps
       if (configuration == 10) rf24.setModemConfig(rf24.OOK_Rb10Bw40);   // OOK  10  kbps
       
-      rf24.setTxPower(0x7f); //0x00 to 0x4f. 0x10 is default
+      rf24.setTxPower(0x4f); //0x00 to 0x4f. 0x10 is default
       logfile.print("Receiving at 433.5 MHz in configuration "); 
       logfile.println(configuration);
       logfile.flush();
+      logfile.print("Receieved Boolean");
+      logfile.print(",");
+      logfile.print("Length");
+      logfile.print(",");
+      logfile.print("Message");
+      logfile.print(",");
+      logfile.print("RSSI");
+      logfile.print(",");
+      logfile.print("BER");
+      logfile.print(",");
+      logfile.println("ByteER");
+      logfile.flush();
+      
+
+      Serial.print("Receiving at 433.5 MHz in configuration "); 
+      Serial.println(configuration);
       
       delay(1000);
       nextState = TRANSMIT_GFSK;
@@ -143,50 +159,69 @@ void loop() {
         Serial.print("Starting to receive transmissions for 90 seconds at configuration ");
         Serial.println(configuration);
         while ((millis()-loopStart) < 90000){
-          uint8_t data[150] = {0};
-          char dataa[150] = {'a'};
-          uint8_t leng = 0;
+          uint8_t data[200] = {0};
+          char dataa[200] = {'a'};
+          uint8_t leng = 200;
           boolean tru = rf24.recv(data, &leng);
           if (tru){
             Serial.println("Received message is below:");
-            for (int i = 0; i < 150; i++){
+            for (int i = 0; i < leng; i++){
               dataa[i] = data[i];
               Serial.print(dataa[i]);
-              Serial.println();
             }
+            Serial.println();
+            Serial.print(" Length :");
+            Serial.println(leng);
           }
+          uint8_t ref[] = "Hello This is to test the ValBal radio receiver and transmitter.  If you get this message completely this board worked.  Hooray!! 0123456789!@#$%^&*()_+ DONE";
+          
           if (tru){
             logfile.print(tru);
             logfile.print(",");
             logfile.print(leng);
             logfile.print(",");
-            for(int k = 0; k < 150; k++){
-              logfile.print(data[k]);
+            for(int k = 0; k < 200; k++){
+              logfile.print(dataa[k]);
             }
             uint8_t lastRssi = (uint8_t)rf24.lastRssi();
-            logfile.println(lastRssi);
+            logfile.print(lastRssi);
+            int biterr = 0;
+            int byteerr = 0;
+            int len = strlen((const char*)ref);
+            for (int i = 0; i < len; i++){
+              if (dataa[i] != ref[i]) byteerr++;
+              uint8_t sim = dataa[i] ^ ref[i];
+              for (int kk=0; kk<8; kk++) {
+                if (sim & 1) biterr++;
+                sim >>= 1;
+              }
+            }
+            logfile.print(",");
+            logfile.print(((float)biterr)/(len*8.)*100);
+            logfile.print(",");
+            logfile.println(((float)byteerr)/(len)*100);
             logfile.flush();
+            Serial.println("For this transmission: ");
+            Serial.print("  Bit error rate: ");
+            Serial.print(((float)biterr)/(len*8.)*100);
+            Serial.println(" %");
+            Serial.print("  Byte error rate: ");
+            Serial.print(((float)byteerr)/(len)*100);
+            Serial.println(" %");
+            Serial.println();
+            Serial.print(" LastRssi: ");
+            Serial.println(lastRssi);
+            
           }
-        }
-//      uint8_t data[] = "This is to test the ValBal radio receiver and transmitter.  If you get this message completely this board worked.  Hooray!! 0123456789!@#$%^&*()_+ DONE";
-//      Serial.print("Starting 10 transmissions at configuration ");
-//      Serial.println(configuration);
-//      for (int k = 0; k < 10; k++){
-//        rf24.send(data, sizeof(data));
-//        rf24.waitPacketSent();
-//        Serial.print("Transmission #");
-//        Serial.print(k);
-//        Serial.println(" complete.");
-//        delay(3000);
-//      }
-//      GFSKOff();
+      }
       nextState = GFSK_CONFIG;
       break;
   }
   
   //update the state machine
-  currentState = nextState;
   previousState = currentState;
+  currentState = nextState;
+
 }
 
 /*************************************************************************************************************************************************************************************************/
